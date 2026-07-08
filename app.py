@@ -1,50 +1,34 @@
-import gradio as gr
+import streamlit as st
 import numpy as np
+import tensorflow as tf
+from tensorflow.keras.preprocessing.sequence import pad_sequences
 import pickle
 
-from tensorflow.keras.models import load_model
-from tensorflow.keras.preprocessing.sequence import pad_sequences
-
-# Load tokenizer
-with open("tokenizer.pkl", "rb") as f:
+# LOAD MODEL & TOKENIZER
+model = tf.keras.models.load_model('next_word_model_new.keras')  # ✅ new format
+with open('tokenizer.pkl', 'rb') as f:
     tokenizer = pickle.load(f)
 
-# Load trained model
-model = load_model("next_word_model_new.keras")
-
-# Reverse dictionary
-idx2word = {v: k for k, v in tokenizer.word_index.items()}
-
-MAX_LEN = 5
-
+# PREDICT
 def predict(text):
-    if not text.strip():
-        return "Please enter some text."
-
-    seq = tokenizer.texts_to_sequences([text.lower()])
-    seq = pad_sequences(seq, maxlen=MAX_LEN, padding="pre")
-
-    probs = model.predict(seq, verbose=0)[0]
+    tokens = tokenizer.texts_to_sequences([text.lower()])[0]
+    tokens = pad_sequences([tokens], maxlen=5, padding='pre')
+    probs  = model.predict(tokens, verbose=0)[0]
     top_ids = np.argsort(probs)[-5:][::-1]
+    idx2word = {v: k for k, v in tokenizer.word_index.items()}
+    return [(idx2word.get(i, '?'), float(probs[i])) for i in top_ids]
 
-    result = []
-    for idx in top_ids:
-        word = idx2word.get(idx, "Unknown")
-        result.append(f"{word} ({probs[idx]*100:.2f}%)")
+# UI
+st.title("🔮 Next Word Predictor")
+user_input = st.text_input("Enter your text:")
 
-    return "\n".join(result)
+if st.button("Predict"):
+    if user_input:
+        results = predict(user_input)
+        st.subheader("Suggestions:")
+        for word, prob in results:
+            st.write(f"➡️ **{word}** — {prob:.2%}")
+    else:
+        st.warning("Please enter some text!")
 
-demo = gr.Interface(
-    fn=predict,
-    inputs=gr.Textbox(
-        lines=2,
-        placeholder="Type something..."
-    ),
-    outputs=gr.Textbox(
-        label="Top 5 Predictions"
-    ),
-    title="🔮 Next Word Predictor",
-    theme=gr.themes.Soft()
-)
 
-demo.launch()
