@@ -11,8 +11,8 @@ st.title("🔮 Next Word Predictor")
 # Load model and tokenizer (only once)
 @st.cache_resource
 def load_model():
-    model = tf.keras.models.load_model('next_word_model_new.keras')
-    with open('tokenizer.pkl', 'rb') as f:
+    model = tf.keras.models.load_model('next_word_model.h5')
+    with open('tokenizer_new.pkl', 'rb') as f:
         tokenizer = pickle.load(f)
     return model, tokenizer
 
