@@ -114,7 +114,7 @@ Once upon a
 **Prediction**
 
 ```text
-time
+delighted
 ```
 
 ---
